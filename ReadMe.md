@@ -16,6 +16,6 @@ Both are actively in progress — this is v1, not a finished project.
 
 Why I built this
 
-I'm early in my CS degree and wanted to actually understand memory management instead of just knowing the vocabulary. This is part of a longer self-study path toward systems programming — compilers, OS internals, that kind of thing. This felt like the right next step after building a CHIP-8 emulator.
+I'm early in my UG degree and wanted to actually understand memory management instead of just knowing the vocabulary. This is part of a longer self-study path toward systems programming — compilers, OS internals, that kind of thing. This felt like the right next step after building a CHIP-8 emulator.
 
 More features (and probably a few rewrites once I understand this better) coming soon.
