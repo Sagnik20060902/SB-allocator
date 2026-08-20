@@ -56,6 +56,24 @@ Block* extend_heap(size_t size){
     return new_block;
 }
 
+
+void split(Block* block, size_t size){
+    if (block->size >= size + sizeof(Block) + 1){
+        Block* remainder = (Block*)((char*)block + sizeof(Block) + size);
+        
+        remainder->size = block->size - size - sizeof(Block);
+        remainder->is_free = 1;
+        
+        remainder->next_ptr = block->next_ptr;
+        remainder->prev_ptr = block;
+        block->next_ptr = remainder;
+        if((remainder->next_ptr) != NULL){
+            ((Block*)remainder->next_ptr)->prev_ptr = remainder;
+        }
+        block->size = size;
+    }
+}
+
 void* sballoc(int size){
     if (header == NULL){
         Block* head = init_heap(size);
@@ -72,6 +90,7 @@ void* sballoc(int size){
             return NULL;
         }
     }
+    split(current, size);
     current->is_free = 0;
     return (char*)current + sizeof(Block);
 
@@ -125,4 +144,18 @@ int main(){
     int* g = sballoc(250);
     printf("g: %p, d: %p — should be same address if coalesced\n", 
            (void*)g, (void*)d);
+
+    // allocate a big block
+    char* n = sballoc(200);
+    sbfree(n);
+    
+    // now allocate something small — should split the 200-byte block
+    char* m = sballoc(10);
+    char* o = sballoc(10);
+    
+    // m and o should be different addresses, both within the original 200-byte region
+    printf("m: %p\n", (void*)m);
+    printf("o: %p\n", (void*)o);
+    // o should be close to m (within the split remainder), not a brand new sbrk allocation
 }
+
