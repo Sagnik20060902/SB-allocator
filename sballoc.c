@@ -7,6 +7,7 @@ typedef struct {
     size_t size;
     int is_free;
     void *next_ptr;
+    void *prev_ptr;
 } Block;
 
 Block* header = NULL;
@@ -18,6 +19,7 @@ Block* init_heap(size_t size){
     head->size = (size);
     head->is_free = 1;
     head->next_ptr = NULL;
+    head->prev_ptr = NULL;
     header = head;
     return head;
 }
@@ -48,6 +50,7 @@ Block* extend_heap(size_t size){
     new_block->size = size;
     new_block->is_free = 1;
     new_block->next_ptr = NULL;
+    new_block->prev_ptr = head;
 
     head->next_ptr = new_block;
     return new_block;
@@ -74,9 +77,29 @@ void* sballoc(int size){
 
 }
 
+
+void collease(Block* block){
+    if(block->next_ptr != NULL && (((Block*)block->next_ptr)->is_free == 1)){
+        block->size += sizeof(Block) + ((Block*)block->next_ptr)->size;
+        block->next_ptr = ((Block*)block->next_ptr)->next_ptr;
+        if((Block*)block->next_ptr != NULL){
+            ((Block*)block->next_ptr)->prev_ptr = block;
+        }
+    }
+    if(block->prev_ptr != NULL && (((Block*)block->prev_ptr)->is_free == 1)){
+        Block* prev  = (Block*)block->prev_ptr;
+        prev->size += sizeof(Block) + block->size;
+        prev->next_ptr = block->next_ptr;
+        if(block->next_ptr != NULL){
+            ((Block*)block->next_ptr)->prev_ptr = prev;
+        }
+    }
+}
+
 void sbfree(void* ptr){
     Block* block = (Block*)((char*)ptr - sizeof(Block));
     block->is_free = 1;
+    collease(block);
 }
 
 int main(){
@@ -85,5 +108,21 @@ int main(){
     printf("%d\n", *a);
     sbfree(a);
     int* b = sballoc(sizeof(int));
-    printf("%p vs %p\n", (void*)a, (void*)b);  // does b reuse a's freed slot?
+    printf("%p vs %p\n", (void*)a, (void*)b);  
+
+     // allocate three adjacent blocks
+    int* d = sballoc(100);
+    int* e = sballoc(100);
+    int* f = sballoc(100);
+    
+    // free all three — should coalesce into one big block
+    sbfree(d);
+    sbfree(e);
+    sbfree(f);
+    
+    // now try allocating something bigger than any single block
+    // if coalescing worked, this should reuse the merged space
+    int* g = sballoc(250);
+    printf("g: %p, d: %p — should be same address if coalesced\n", 
+           (void*)g, (void*)d);
 }
